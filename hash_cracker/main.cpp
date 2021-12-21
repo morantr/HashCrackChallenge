@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <time.h>
 #include "base64.h"
 #include "sha256.h"
@@ -9,7 +10,7 @@
 
 using namespace std;
 
-void _tmain(int argc, _TCHAR* argv[])
+int main(int argc, char *argv[])
 {
 	SHA256 sha256;
 	unsigned char HEX[32];
@@ -31,7 +32,7 @@ void _tmain(int argc, _TCHAR* argv[])
 		myHash = sha256(CommonPassword);
 		cstr = myHash.c_str();
 		for (int count = 0; count < sizeof(HEX) / sizeof(HEX[0]); count++) {
-			sscanf_s(cstr, "%2hhx", &HEX[count]);
+			sscanf(cstr, "%2hhx", &HEX[count]);
 			cstr += 2;
 		}
 		b64 = base64_encode(HEX, 32);
@@ -39,6 +40,7 @@ void _tmain(int argc, _TCHAR* argv[])
 		int EncryptedPassNum = 0;
 		while (getline(EncryptedPasswordsfile, EncryptedPass))
 		{
+			// cout << "Encrypted Password number: " << EncryptedPassNum << "\n";
 			if (b64 == EncryptedPass){
 				cout << "Decrypted Password number: " << EncryptedPassNum << " - " << PassCpy <<  "\n";
 				DecryptedPasswordFile.open("DecryptedPassword.txt", ios::app);
@@ -54,6 +56,6 @@ void _tmain(int argc, _TCHAR* argv[])
 		CommonPasswordLine++;
 	}
 	
-		//return 0;
+	return EXIT_SUCCESS;
 }
 
