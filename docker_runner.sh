@@ -32,7 +32,7 @@ main() {
         case "$1" in
             -h | --help)               usage; exit 0; shift ;;
             -t | --terminal)           TERMINAL="-it"; shift ;;
-            -r | --run)                RUN="--entrypoint ./build/hashCracker"; shift ;;
+            -r | --run)                RUN="--entrypoint ./build/bin/hashCracker"; shift ;;
             -- ) shift; break ;;
             * ) err "unsupported argument $1"; usage; exit 1 ;;
         esac
