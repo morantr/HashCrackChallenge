@@ -5,9 +5,7 @@ project(hashCracker)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Set the base path for the current module
-set(MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/hash_cracker)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True) # Do not fall back to C++98
 
 add_subdirectory(src)
-
-
