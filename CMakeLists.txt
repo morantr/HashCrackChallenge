@@ -8,6 +8,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CXX_STANDARD 17) 
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # Do not fall back to C++98
 
+option(BUILD_TESTS "build tests" ON)
+if (BUILD_TESTS)
+    enable_testing()
+    message(STATUS "Tests enabled")
+endif()
+
 add_subdirectory(src)
 
 
