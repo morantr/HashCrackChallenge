@@ -1,4 +1,3 @@
-add_subdirectory("test")
 add_subdirectory("external")
 
 # Set the base path for the current module
@@ -12,4 +11,9 @@ message(STATUS "Preparing ${hash_cracker_sources}")
 add_executable(${PROJECT_NAME} ${hash_cracker_sources})
 
 # Needs to be defined after 'add_executable()'
-target_link_libraries(${PROJECT_NAME} extrn)
+target_link_libraries(${PROJECT_NAME} gtest extrn)
+
+if(BUILD_TESTS)
+    add_subdirectory("test")
+endif()
+

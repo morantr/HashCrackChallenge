@@ -50,6 +50,8 @@ main() {
         --workdir "${workdir}"
 
         # Bind mount a volume. Binds the host directory to the docker.
+        # It is possible to replace "${scriptdir}" with "/" and get access to all files on
+        # the machine.
         -v "${scriptdir}:${workdir}"
     )
 
