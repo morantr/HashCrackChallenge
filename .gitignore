@@ -32,5 +32,8 @@
 *.app
 
 # Folders
-/build/
+build/
+
+# VSCODE
+.vscode/settings.json
 
