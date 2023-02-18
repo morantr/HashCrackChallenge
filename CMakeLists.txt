@@ -8,6 +8,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True) # Do not fall back to a lower version
 
+set(CMAKE_C_FLAGS "-Wall -Werror -Wextra -Wno-comment -Wno-unused-macros -Wno-parentheses \
+  -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations \
+  -Werror=format-security -Wpedantic -Wunused -Wshadow -Wfatal-errors -O3")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}")
+
 option(BUILD_TESTS "build tests" ON)
 
 if(BUILD_TESTS)
