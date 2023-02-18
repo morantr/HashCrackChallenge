@@ -1,57 +1,101 @@
+#include "CharPermutationsString.h"
+#include "UiUtils.h"
+
 #include <algorithm>
+#include <array>
 #include <base64.h>
+#include <chrono>
+#include <cmath>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sha256.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-using namespace std;
+constexpr char chars[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-int main(int argc, char* argv[]) {
-    SHA256 sha256;
-    unsigned char HEX[32];
-    const char* cstr;
-    string myHash;
-    string b64;
-    string PassCpy;
-    int CommonPasswordLine = 1;
-    ofstream DecryptedPasswordFile;
-    ifstream EncryptedPasswordsfile("EncryptedPasswords.txt");
-    ifstream CommonPasswordsfile("passwords_db/10_million_password_list.txt");
-    string EncryptedPass, CommonPassword;
+void full_flow_demo()
+{
+    CharPermutationsString::init(chars);
+    auto max = std::numeric_limits<ulong>::max() - 1;
+    CharPermutationsString char_premutations("0", max);
 
-    while (getline(CommonPasswordsfile, CommonPassword)) {
-        transform(CommonPassword.begin(), CommonPassword.end(), CommonPassword.begin(), ::tolower);
-        PassCpy        = CommonPassword;
-        CommonPassword = "IEEE" + CommonPassword + "Xtreme";
-        myHash         = sha256(CommonPassword);
-        cstr           = myHash.c_str();
-        for (int count = 0; count < sizeof(HEX) / sizeof(HEX[0]); count++) {
-            sscanf(cstr, "%2hhx", &HEX[count]);
+    constexpr std::string_view salt   = "IEEE";
+    constexpr std::string_view pepper = "Xtreme";
+
+    auto ref_time = std::chrono::steady_clock::now();
+
+    // Save the index to deal with counter reset when it is incremented beyond its maximum value.
+    ulong hash_counter = 1, ref_idx = 1;
+
+    while (1) {
+        auto generated_phrase = char_premutations.get_next_permutation();
+
+        std::string decrypted_pass;
+        decrypted_pass.reserve(salt.size() + generated_phrase.size() + pepper.size());
+        decrypted_pass.append(salt).append(generated_phrase).append(pepper);
+
+        SHA256 sha256;
+        auto encrypted_hex_str = sha256(decrypted_pass);
+
+        std::array<uint8_t, SHA256::HashBytes> encrypted;
+
+        auto cstr = encrypted_hex_str.c_str();
+        for (uint i = 0; i < encrypted.size(); ++i) {
+            // Using sscanf since it is the fastest way found to convert hex string to uint.
+            sscanf(cstr, "%2hhx", &encrypted[i]);
             cstr += 2;
         }
-        b64 = base64_encode(HEX, 32);
 
-        int EncryptedPassNum = 0;
-        while (getline(EncryptedPasswordsfile, EncryptedPass)) {
-            if (b64 == EncryptedPass) {
-                cout << "Decrypted Password number: " << EncryptedPassNum << " - " << PassCpy
-                     << "\n";
-                DecryptedPasswordFile.open("DecryptedPassword.txt", ios::app);
-                DecryptedPasswordFile << EncryptedPassNum << ". " << PassCpy << "\n";
-                DecryptedPasswordFile.close();
-                break;
+        auto hash = base64_encode(encrypted.data(), encrypted.size());
+
+        auto now                   = std::chrono::steady_clock::now();
+        constexpr auto update_rate = std::chrono::seconds(1);
+
+        if (now - ref_time > update_rate) {
+            if (hash_counter < ref_idx) {
+                hash_counter += std::numeric_limits<typeof(ref_idx)>::max() - ref_idx;
+                ref_idx = 0;
             }
-            EncryptedPassNum++;
-        }
 
-        EncryptedPasswordsfile.clear();
-        EncryptedPasswordsfile.seekg(0, ios::beg);
-        CommonPasswordLine++;
+            uint hash_rate;
+            std::string hash_rate_str;
+            std::tie(hash_rate, hash_rate_str) =
+                UiUtils::build_hash_rate_string(hash_counter, ref_idx, update_rate);
+
+            std::cout << std::dec << std::setprecision(2);
+
+            // clang-format off
+            std::cout << "\33[A\r\33[0K" // Remove the previous print to prevent screen flooding
+                      << "HashRate=" << hash_rate << hash_rate_str
+                      << ", hash_counter: " << hash_counter 
+                      << ", passphrase: " << generated_phrase
+                      << "\n"
+                      ;
+            // clang-format on 
+            ref_time = now;
+            ref_idx  = hash_counter;
+        }
+        ++hash_counter;
     }
+}
+
+int main(int argc, char* argv[])
+{
+    try
+    {
+        full_flow_demo();
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return EXIT_FAILURE;
+    }
+    
 
     return EXIT_SUCCESS;
-}
+} 
