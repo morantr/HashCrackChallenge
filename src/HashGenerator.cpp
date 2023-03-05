@@ -23,7 +23,7 @@ void HashGenerator::set_initial_permutation(std::string_view initial_permutation
     m_current_permutation.assign(initial_permutation);
 }
 
-std::string_view HashGenerator::get_next_permutation_hash()
+std::string HashGenerator::get_next_permutation_hash()
 {
     // Fill m_current_permutation with next password permutation
     BaseOperationsUtils::increment_base_x_integer(m_current_permutation, m_valid_characters);
@@ -34,10 +34,8 @@ std::string_view HashGenerator::get_next_permutation_hash()
     // Encrypt the password with SHA-256
     auto encrypted_password = _encrypt_password(decrypted_password);
 
-    // Encode the the encrypted password to base64
-    auto hash = base64_encode(encrypted_password.data(), encrypted_password.size());
-
-    return hash;
+    // Encode the the encrypted password to base64 and return it.
+    return base64_encode(encrypted_password.data(), encrypted_password.size());
 }
 
 std::string HashGenerator::_get_spiced_permutation()

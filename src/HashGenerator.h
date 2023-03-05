@@ -24,9 +24,9 @@ class HashGenerator {
     /**
      * @brief Increment the permutation to the next one, and construct a hash from that.
      *
-     * @return std::string_view A Hash of the next permutation.
+     * @return std::string A Hash of the next permutation.
      */
-    std::string_view get_next_permutation_hash();
+    std::string get_next_permutation_hash();
 
     /**
      * @brief Get the current permutation string.

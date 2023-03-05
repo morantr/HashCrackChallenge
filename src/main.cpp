@@ -8,7 +8,7 @@
 #include <limits>
 #include <string_view>
 
-const std::vector<std::string> hash_list = {
+std::vector<std::string> hash_list = {
     "/PtjJboZGlsmTovvyOhBOoTVnQKUP/gJXxjLAW9Lppw=", "05HwH93tksb69U1ifesCQuYFP+gKPVH2L6W8JeBdXy0=",
     "0BkyqI3NHyjh0m20wNt6txW08dglSMP4/qzUEezq4Aw=", "1mT5cdKRz4BbfMdc8LAdnxfjsGO4lV0k0/V1IHtidmY=",
     "28AdfW0JHmCP4TbieGON8dafRaFpUgpzuX2bHZN6WsM=", "3hoie8omUyvM/9Qfx9dKfoptlwemYe2os8aohTGzoyw=",
@@ -75,10 +75,18 @@ void full_flow_demo()
 
     hash_generator.set_initial_permutation("");
 
+    uint32_t password_discovered   = 0;
+    const uint32_t total_passwords = hash_list.size();
+
     while (1) {
         auto hash = hash_generator.get_next_permutation_hash();
-        if (std::find(hash_list.begin(), hash_list.end(), hash) != hash_list.end()) {
-            std::cout << "Found hash " << hash_generator.get_current_permutation() << "\n";
+
+        auto found_iter = std::find(hash_list.begin(), hash_list.end(), hash);
+        if (found_iter != hash_list.end()) {
+            std::cout << "Found hash, password: " << hash_generator.get_current_permutation()
+                      << ", hash: " << hash << "\n\n";
+            hash_list.erase(found_iter);
+            ++password_discovered;
         }
 
         constexpr auto update_rate = std::chrono::seconds(1);
@@ -103,7 +111,9 @@ void full_flow_demo()
             std::cout << "\033[0F" // Remove the previous print to prevent screen flooding.
                       << "HashRate=" << hash_rate << hash_rate_str
                       << ", hash_counter: " << hash_counter
-                      << ", passphrase: " << hash_generator.get_current_permutation() << "\n";
+                      << ", passphrase: " << hash_generator.get_current_permutation()
+                      << ", total passwords discoveries: " << password_discovered << "/"
+                      << total_passwords << "\t\t\t\n";
         }
         ++hash_counter;
     }

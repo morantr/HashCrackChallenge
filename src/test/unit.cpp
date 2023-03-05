@@ -1,8 +1,71 @@
 #include "../BaseOperationsUtils.h"
+#include "../HashGenerator.h"
+#include "../UiUtils.h"
+#include "../external/include/base64.h"
 
 #include <gtest/gtest.h>
 #include <sha256.h>
 #include <tuple>
+
+TEST(Flow, demo_password)
+{
+    constexpr std::string_view salt   = "IEEE";
+    constexpr std::string_view pepper = "Xtreme";
+    std::string passphrase("password1");
+    std::string decrypted_pass;
+    decrypted_pass.reserve(salt.size() + passphrase.size() + pepper.size());
+    decrypted_pass.append(salt).append(passphrase).append(pepper);
+
+    std::cout << "decrypted_pass: " << decrypted_pass << '\n';
+
+    SHA256 sha256;
+    auto encrypted_hex_str = sha256(decrypted_pass);
+
+    std::array<uint8_t, SHA256::HashBytes> encrypted;
+
+    auto cstr = encrypted_hex_str.c_str();
+    for (uint i = 0; i < encrypted.size(); ++i) {
+        sscanf(cstr, "%2hhx", &encrypted[i]);
+        cstr += 2;
+    }
+
+    // clang-format off
+    std::array<uint8_t, SHA256::HashBytes> encrypted_ref = {
+        180, 55, 102, 41, 10, 76, 137, 80, 197, 3, 86, 29, 110, 89, 7, 72, 92, 
+        203, 225, 159, 84, 33, 15, 69, 74, 139, 159, 221, 60, 155, 58, 237
+    };
+    // clang-format on
+
+    std::cout << "encrypted uints: ";
+    for (auto e : encrypted) {
+        std::cout << int(e) << " ";
+    }
+    std::cout << "\n";
+
+    EXPECT_TRUE(std::equal(encrypted_ref.begin(), encrypted_ref.end(), encrypted.data()));
+
+    auto hash = base64_encode(encrypted.data(), encrypted.size());
+    std::cout << "sha-256 encrypted b64 encoded: " << hash << '\n';
+
+    EXPECT_STREQ(hash.c_str(), "tDdmKQpMiVDFA1YdblkHSFzL4Z9UIQ9FSouf3TybOu0=");
+}
+
+TEST(HashGenerator, basic_functionality)
+{
+    constexpr std::string_view salt        = "IEEE";
+    constexpr std::string_view pepper      = "Xtreme";
+    constexpr std::string_view valid_chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+    HashGenerator hash_generator(salt, pepper, valid_chars);
+    hash_generator.set_initial_permutation("password0");
+
+    // get "password1" hash
+    auto hash = hash_generator.get_next_permutation_hash();
+
+    EXPECT_STREQ(hash_generator.get_current_permutation().data(), "password1");
+
+    EXPECT_STREQ(hash.data(), "tDdmKQpMiVDFA1YdblkHSFzL4Z9UIQ9FSouf3TybOu0=");
+}
+
 TEST(BaseOperationsUtils, decimal_to_base_x)
 {
     std::string_view base_characters_10 = "0123456789";
