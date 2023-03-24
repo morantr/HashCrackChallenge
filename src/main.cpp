@@ -1,4 +1,3 @@
-#include "HashCracker.h"
 #include "HashGenerator.h"
 #include "UiUtils.h"
 

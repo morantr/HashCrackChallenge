@@ -13,8 +13,9 @@ HashGenerator::HashGenerator(
 }
 
 HashGenerator::HashGenerator(HashGenerator &&hash_generator) :
-    m_current_permutation(hash_generator.m_current_permutation), m_salt(hash_generator.m_salt),
-    m_pepper(hash_generator.m_pepper), m_valid_characters(hash_generator.m_valid_characters)
+    m_current_permutation(std::move(hash_generator.m_current_permutation)),
+    m_salt(std::move(hash_generator.m_salt)), m_pepper(std::move(hash_generator.m_pepper)),
+    m_valid_characters(std::move(hash_generator.m_valid_characters))
 {
 }
 
@@ -32,10 +33,7 @@ std::string HashGenerator::get_next_permutation_hash()
     auto decrypted_password = _get_spiced_permutation();
 
     // Encrypt the password with SHA-256
-    auto encrypted_password = _encrypt_password(decrypted_password);
-
-    // Encode the the encrypted password to base64 and return it.
-    return base64_encode(encrypted_password.data(), encrypted_password.size());
+    return _encrypt_password(decrypted_password);
 }
 
 std::string HashGenerator::_get_spiced_permutation()
@@ -46,19 +44,8 @@ std::string HashGenerator::_get_spiced_permutation()
     return decrypted_pass;
 }
 
-std::array<uint8_t, HashGenerator::sha256_vector_size> HashGenerator::_encrypt_password(
-    std::string_view decrypted_password)
+std::string HashGenerator::_encrypt_password(std::string_view decrypted_password)
 {
     SHA256 sha256;
-    auto encrypted_hex_str = sha256(decrypted_password.data(), decrypted_password.size());
-
-    std::array<uint8_t, sha256_vector_size> encrypted;
-
-    auto c_str = encrypted_hex_str.c_str();
-    for (uint i = 0; i < encrypted.size(); ++i) {
-        // Using sscanf since it is the fastest way found to convert hex string to uint.
-        sscanf(c_str, "%2hhx", &encrypted[i]);
-        c_str += 2;
-    }
-    return encrypted;
+    return sha256(decrypted_password.data(), decrypted_password.size());
 }

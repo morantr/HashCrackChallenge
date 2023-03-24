@@ -6,6 +6,16 @@
 #include <string_view>
 #include <vector>
 
+/**
+ * @brief The HashGenerator's responsibility is to take a range of string permutations and transform
+ * each one of them into a hash in three simple steps:
+ *
+ * 1. Spice the permutation string with 'salt' and 'pepper' before and after the string, e.g:
+ * <salt prefix string>Permutation<pepper suffix string>
+ *
+ * 2. Encrypt the spiced permutation with SHA-256.
+ */
+
 class HashGenerator {
   public:
     HashGenerator(
@@ -36,8 +46,6 @@ class HashGenerator {
     std::string_view get_current_permutation() { return m_current_permutation; }
 
   private:
-    static constexpr size_t sha256_vector_size = 32;
-
     /**
      * @brief Construct a spiced permutation by adding @a m_salt as prefix, and @a m_pepper
      * as suffix to @a m_current_permutation which holds the latest password permutation.
@@ -52,7 +60,7 @@ class HashGenerator {
      * @param decrypted_pass Password to encrypt.
      * @return std::array<uint8_t, sha256_vector_size> containing the encrypted password.
      */
-    std::array<uint8_t, sha256_vector_size> _encrypt_password(std::string_view decrypted_password);
+    std::string _encrypt_password(std::string_view decrypted_password);
 
     std::string m_current_permutation;
     const std::string m_salt;
