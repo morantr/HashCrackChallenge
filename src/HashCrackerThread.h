@@ -112,6 +112,13 @@ class HashCrackerThread {
      */
     MsgExternalEndPoint &get_external_endpoint();
 
+    /**
+     * @brief Set the hash list.
+     *
+     * @param encrypted_password_list List of encrypted passwords.
+     */
+    void set_hash_list(const std::vector<std::string_view> &encrypted_password_list);
+
   private:
     /**
      * @brief An initialization function given to and called by the Thread class in the thread

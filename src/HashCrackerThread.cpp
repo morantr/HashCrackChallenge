@@ -7,54 +7,15 @@
 #include <iomanip>
 #include <iostream>
 
-HashCrackerThread::HashCrackerThread(uint32_t id, HashGenerator &&hash_generator,
-    const std::vector<std::string_view> &encrypted_password_list) :
-    m_id(id),
-    m_thread("HashCrackerThread::" + std::to_string(m_id),
-        std::bind(&HashCrackerThread::loop, this),
-        std::bind(&HashCrackerThread::_thread_init, this)),
+HashCrackerThread::HashCrackerThread(uint32_t id, HashGenerator &&hash_generator) :
+    m_id(id), m_thread("HashCrackerThread::" + std::to_string(m_id),
+                  std::bind(&HashCrackerThread::loop, this),
+                  std::bind(&HashCrackerThread::_thread_init, this)),
     m_hash_generator(std::move(hash_generator)), m_statistics(),
     m_message_endpoint(m_io.get_internal_endpoint())
 
 {
     std::cout << m_thread.get_thread_name() << " created!\n";
-
-    /* Base64 decode the given hash list */
-    m_hash_map.reserve(encrypted_password_list.size());
-    for (auto hash_sv : encrypted_password_list) {
-        std::string hash_str(hash_sv);
-
-        // I'm not sure why, but the creator of the base64 library designed the decode function to
-        // return an array of uint8_t values encapsulated in a std::string instead of an array or a
-        // vector. The result is obviously non-printable since it contains many non-printable
-        // characters.
-        // Since the SHA256 library returns a printable string of uint8_t values in hexadecimal
-        // format, we need to transform the output of the base64_decode() function to a string of
-        // hexadecimal values.
-
-        auto b64_decoded_uint8s = base64_decode(hash_str);
-        std::string b64_decoded_hash;
-        b64_decoded_hash.reserve(64);
-
-        // Transform each uint8_t in the b64_decoded_uint8s string into two hexadecimal printable
-        // characters.
-        for (auto c : b64_decoded_uint8s) {
-            constexpr std::string_view base_characters_16 = "0123456789abcdef";
-            auto hex =
-                BaseOperationsUtils::decimal_to_base_x(static_cast<uint8_t>(c), base_characters_16);
-
-            // Pad with single '0' if there is a single character.
-            hex.insert(0, hex.size() & 1, '0');
-            b64_decoded_hash.append(hex);
-        }
-
-        // Push the base64 decoded hash to vector that maps the decoded hash to the non decoded hash
-        m_hash_map.emplace_back(std::move(sHashDict {hash_str, b64_decoded_hash}));
-    }
-
-    // Sort the hash map to allow binary search on it.
-    std::sort(m_hash_map.begin(), m_hash_map.end(),
-        [](const sHashDict &a, const sHashDict &b) { return a.decoded_hash < b.decoded_hash; });
 
     /* Define Message Handlers */
     m_message_endpoint.register_message_handler(eMessageType::SET_TASK,
@@ -102,6 +63,49 @@ bool HashCrackerThread::init()
 MsgExternalEndPoint &HashCrackerThread::get_external_endpoint()
 {
     return m_io.get_external_endpoint();
+}
+
+void HashCrackerThread::set_hash_list(const std::vector<std::string_view> &encrypted_password_list)
+{
+    /* Base64 decode the given hash list */
+    m_hash_map.reserve(encrypted_password_list.size());
+    for (auto hash_sv : encrypted_password_list) {
+        std::string hash_str(hash_sv);
+
+        // I'm not sure why, but the creator of the base64 library designed the decode function to
+        // return an array of uint8_t values encapsulated in a std::string instead of an array or a
+        // vector. The result is obviously non-printable since it contains many non-printable
+        // characters.
+        // Since the SHA256 library returns a printable string of uint8_t values in hexadecimal
+        // format, we need to transform the output of the base64_decode() function to a string of
+        // hexadecimal values.
+
+        auto b64_decoded_uint8s = base64_decode(hash_str);
+        std::string b64_decoded_hash;
+
+        // 64 is the number bytes in SHA-256 multiplied by 2, since each byte represented by two
+        // characters.
+        b64_decoded_hash.reserve(64);
+
+        // Transform each uint8_t in the b64_decoded_uint8s string into two hexadecimal printable
+        // characters.
+        for (auto c : b64_decoded_uint8s) {
+            constexpr std::string_view base_characters_16 = "0123456789abcdef";
+            auto hex =
+                BaseOperationsUtils::decimal_to_base_x(static_cast<uint8_t>(c), base_characters_16);
+
+            // Pad with single '0' if there is a single character.
+            hex.insert(0, hex.size() & 1, '0');
+            b64_decoded_hash.append(hex);
+        }
+
+        // Push the base64 decoded hash to vector that maps the decoded hash to the non decoded hash
+        m_hash_map.emplace_back(std::move(sHashDict {hash_str, b64_decoded_hash}));
+    }
+
+    // Sort the hash map to allow binary search on it.
+    std::sort(m_hash_map.begin(), m_hash_map.end(),
+        [](const sHashDict &a, const sHashDict &b) { return a.decoded_hash < b.decoded_hash; });
 }
 
 void HashCrackerThread::loop()
