@@ -120,8 +120,9 @@ void HashCrackerThread::loop()
 void HashCrackerThread::_work()
 {
     if (m_finished_current_task) {
-        std::cout << m_thread.get_thread_name() << " work\n";
-        sleep(1);
+        if (m_thread.is_thread_running()) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
         return;
     }
 
