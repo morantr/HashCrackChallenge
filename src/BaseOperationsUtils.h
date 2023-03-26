@@ -17,7 +17,7 @@ class BaseOperationsUtils {
      *
      * @example decimal_to_base_x(420, {'0','1',..,'F'}) -> "1A4".
      */
-    static std::string decimal_to_base_x(uint decimal, std::string_view base_characters);
+    static std::string decimal_to_base_x(uint32_t decimal, std::string_view base_characters);
 
     /**
      * @brief Sums two integers in base X, and return the result in base X.

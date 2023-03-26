@@ -1,14 +1,18 @@
 // //////////////////////////////////////////////////////////
 // sha256.cpp
-// Copyright (c) 2014,2015 Stephan Brumme. All rights reserved.
+// Copyright (c) 2014,2015,2021 Stephan Brumme. All rights reserved.
 // see http://create.stephan-brumme.com/disclaimer.html
 //
+
 #include "sha256.h"
 
 // big endian architectures need #define __BYTE_ORDER __BIG_ENDIAN
-#ifndef _MSC_VER
-#include <endian.h>
-#endif
+#include "portable_endian.h"
+// #ifndef _MSC_VER
+// #include <endian.h>
+// #endif
+
+//#define SHA2_224_SEED_VECTOR
 
 
 /// same as reset()
@@ -25,6 +29,8 @@ void SHA256::reset()
   m_bufferSize = 0;
 
   // according to RFC 1321
+  // "These words were obtained by taking the first thirty-two bits of the
+  //  fractional parts of the square roots of the first eight prime numbers"
   m_hash[0] = 0x6a09e667;
   m_hash[1] = 0xbb67ae85;
   m_hash[2] = 0x3c6ef372;
@@ -33,6 +39,19 @@ void SHA256::reset()
   m_hash[5] = 0x9b05688c;
   m_hash[6] = 0x1f83d9ab;
   m_hash[7] = 0x5be0cd19;
+
+#ifdef SHA2_224_SEED_VECTOR
+  // if you want SHA2-224 instead then use these seeds
+  // and throw away the last 32 bits of getHash
+  m_hash[0] = 0xc1059ed8;
+  m_hash[1] = 0x367cd507;
+  m_hash[2] = 0x3070dd17;
+  m_hash[3] = 0xf70e5939;
+  m_hash[4] = 0xffc00b31;
+  m_hash[5] = 0x68581511;
+  m_hash[6] = 0x64f98fa7;
+  m_hash[7] = 0xbefa4fa4;
+#endif
 }
 
 
@@ -112,7 +131,7 @@ void SHA256::processBlock(const void* data)
   x = b + f1(g,h,a) + 0x923f82a4 + words[ 6]; y = f2(c,d,e); f += x; b = x + y;
   x = a + f1(f,g,h) + 0xab1c5ed5 + words[ 7]; y = f2(b,c,d); e += x; a = x + y;
 
-  // secound round
+  // second round
   x = h + f1(e,f,g) + 0xd807aa98 + words[ 8]; y = f2(a,b,c); d += x; h = x + y;
   x = g + f1(d,e,f) + 0x12835b01 + words[ 9]; y = f2(h,a,b); c += x; g = x + y;
   x = f + f1(c,d,e) + 0x243185be + words[10]; y = f2(g,h,a); b += x; f = x + y;
@@ -214,7 +233,7 @@ void SHA256::processBlock(const void* data)
                words[i-7] +
                (rotate(words[i- 2], 17) ^ rotate(words[i- 2], 19) ^ (words[i- 2] >> 10));
 
-  // eigth round
+  // eighth round
   x = h + f1(e,f,g) + 0x748f82ee + words[56]; y = f2(a,b,c); d += x; h = x + y;
   x = g + f1(d,e,f) + 0x78a5636f + words[57]; y = f2(h,a,b); c += x; g = x + y;
   x = f + f1(c,d,e) + 0x84c87814 + words[58]; y = f2(g,h,a); b += x; f = x + y;

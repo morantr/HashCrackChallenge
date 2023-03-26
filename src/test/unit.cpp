@@ -24,7 +24,7 @@ TEST(Flow, demo_password)
     std::array<uint8_t, SHA256::HashBytes> encrypted;
 
     auto cstr = encrypted_hex_str.c_str();
-    for (uint i = 0; i < encrypted.size(); ++i) {
+    for (uint32_t i = 0; i < encrypted.size(); ++i) {
         sscanf(cstr, "%2hhx", &encrypted[i]);
         cstr += 2;
     }

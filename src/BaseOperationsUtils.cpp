@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-std::string BaseOperationsUtils::decimal_to_base_x(uint decimal, std::string_view base_characters)
+std::string BaseOperationsUtils::decimal_to_base_x(uint32_t decimal, std::string_view base_characters)
 {
     std::string result;
 
@@ -41,7 +41,7 @@ std::string BaseOperationsUtils::sum_base_x_integers(
 
     uint8_t carry = 0;
     // Start from 'buffer_size - 2' to eliminate null terminator and size to index shift.
-    for (uint i = buffer_size - 2; i < buffer_size; --i) {
+    for (uint32_t i = buffer_size - 2; i < buffer_size; --i) {
         uint8_t sum = carry;
 
         if (i >= int1_pos) {

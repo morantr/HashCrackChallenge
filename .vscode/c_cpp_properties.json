@@ -8,6 +8,15 @@
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
             "intelliSenseMode": "linux-gcc-x64"
+        },
+        {
+            "name": "Windows",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [],
+            "compilerPath": "C:/MinGW/bin",
+            "intelliSenseMode": "linux-gcc-x64"
         }
     ],
     "version": 4
