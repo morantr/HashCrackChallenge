@@ -1,13 +1,16 @@
-#include "HashGenerator.h"
+#include "BaseOperationsUtils.h"
+#include "GlobalDefintions.h"
+#include "HashCrackerManager.h"
 #include "UiUtils.h"
 
 #include <algorithm>
 #include <chrono>
+#include <iomanip>
 #include <iostream>
-#include <limits>
-#include <string_view>
 
-std::vector<std::string> hash_list = {
+bool single_thread = false;
+
+std::vector<std::string_view> hash_list = {
     "/PtjJboZGlsmTovvyOhBOoTVnQKUP/gJXxjLAW9Lppw=", "05HwH93tksb69U1ifesCQuYFP+gKPVH2L6W8JeBdXy0=",
     "0BkyqI3NHyjh0m20wNt6txW08dglSMP4/qzUEezq4Aw=", "1mT5cdKRz4BbfMdc8LAdnxfjsGO4lV0k0/V1IHtidmY=",
     "28AdfW0JHmCP4TbieGON8dafRaFpUgpzuX2bHZN6WsM=", "3hoie8omUyvM/9Qfx9dKfoptlwemYe2os8aohTGzoyw=",
@@ -61,67 +64,130 @@ std::vector<std::string> hash_list = {
 
 void full_flow_demo()
 {
-    constexpr std::string_view salt        = "IEEE";
-    constexpr std::string_view pepper      = "Xtreme";
-    constexpr std::string_view valid_chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+    uint32_t num_thread_supported = std::thread::hardware_concurrency();
 
-    auto ref_time = std::chrono::steady_clock::now();
+    if (single_thread) {
+        num_thread_supported = 1;
+    }
 
-    // Save the index to deal with counter reset when it is incremented beyond its maximum value.
-    ulong hash_counter = 1, ref_idx = 1;
+    std::cout << num_thread_supported << " concurrent threads are supported\n";
 
-    HashGenerator hash_generator(salt, pepper, valid_chars);
+    uint32_t discovered_passwords_count = 0;
 
-    hash_generator.set_initial_permutation("");
+    /* Creation of HashCrackerManager  */
 
-    uint32_t password_discovered   = 0;
-    const uint32_t total_passwords = hash_list.size();
+    uint32_t thread_id = 0;
+    // Main thread
+    HashCrackerManager main_thread_hash_cracker_manager(thread_id, discovered_passwords_count);
 
-    while (1) {
-        auto hash = hash_generator.get_next_permutation_hash();
+    // Other threads
+    std::vector<std::shared_ptr<HashCrackerManager>> hash_cracker_thread_managers;
 
-        auto found_iter = std::find(hash_list.begin(), hash_list.end(), hash);
-        if (found_iter != hash_list.end()) {
-            std::cout << "Found hash, password: " << hash_generator.get_current_permutation()
-                      << ", hash: " << hash << "\n\n";
-            hash_list.erase(found_iter);
-            ++password_discovered;
+    // Create more working thread and push the into the pool
+    for (thread_id = 1; thread_id < num_thread_supported; ++thread_id) {
+        hash_cracker_thread_managers.emplace_back(
+            std::make_unique<HashCrackerManager>(thread_id, discovered_passwords_count));
+    }
+
+    /* HashCrackerManager initialization */
+    // Main thread
+    main_thread_hash_cracker_manager.init(hash_cracker_thread_managers, hash_list);
+
+    // Other threads
+    for (auto& hash_cracker_manager : hash_cracker_thread_managers) {
+        hash_cracker_manager->init(
+            hash_cracker_thread_managers, hash_list, &main_thread_hash_cracker_manager);
+    }
+
+    /* Set HashCrackerManagers task */
+    std::string initial_permutation("");
+    constexpr uint32_t permutations_job = 100000000;
+    const std::string permutations_job_base_str =
+        BaseOperationsUtils::decimal_to_base_x(permutations_job, valid_chars);
+
+    for (thread_id = 0; thread_id < num_thread_supported; ++thread_id) {
+        auto& hash_cracker_manager =
+            (thread_id == 0 ? main_thread_hash_cracker_manager
+                            : *hash_cracker_thread_managers[thread_id - 1]);
+
+        auto msg = std::make_unique<sMSG_SET_TASK>(initial_permutation, permutations_job);
+        hash_cracker_manager.send_message(std::move(msg));
+
+        initial_permutation = BaseOperationsUtils::sum_base_x_integers(
+            initial_permutation, permutations_job_base_str, valid_chars);
+    }
+
+    /* Start HashCrackerManagers threads */
+    for (auto& hash_cracker_manager : hash_cracker_thread_managers) {
+        hash_cracker_manager->get_thread().start_thread();
+    }
+
+    constexpr auto update_rate = std::chrono::seconds(1);
+    auto ref_time              = std::chrono::steady_clock::now();
+
+    std::cout.setf(std::ios::fixed);
+
+    while (true) {
+        main_thread_hash_cracker_manager.loop();
+
+        if (std::chrono::steady_clock::now() - ref_time < update_rate) {
+            continue;
+        }
+        ref_time = std::chrono::steady_clock::now();
+
+        main_thread_hash_cracker_manager.handle_messages();
+
+        uint64_t rate = -1;
+        if (main_thread_hash_cracker_manager.get_hash_rate() != static_cast<uint64_t>(-1)) {
+            rate += main_thread_hash_cracker_manager.get_hash_rate();
         }
 
-        constexpr auto update_rate = std::chrono::seconds(1);
+        for (auto& hash_cracker_manager : hash_cracker_thread_managers) {
+            hash_cracker_manager->handle_messages_thread_safe();
 
-        if (std::chrono::steady_clock::now() - ref_time > update_rate) {
-            if (hash_counter < ref_idx) {
-                hash_counter += std::numeric_limits<typeof(ref_idx)>::max() - ref_idx;
-                ref_idx = 0;
+            if (hash_cracker_manager->get_hash_rate() == static_cast<uint64_t>(-1)) {
+                continue;
             }
-
-            uint64_t hash_rate;
-            std::string hash_rate_str;
-            std::tie(hash_rate, hash_rate_str) =
-                UiUtils::build_hash_rate_string(hash_counter, ref_idx, update_rate);
-
-            ref_time = std::move(std::chrono::steady_clock::now());
-            ref_idx  = hash_counter;
-
-            // Esc characters reference:
-            // https://shiroyasha.svbtle.com/escape-sequences-a-quick-guide-1 '033' - escape
-            // sequence, '[#F' means move to the '#' column.
-            std::cout << "\033[0F" // Remove the previous print to prevent screen flooding.
-                      << "HashRate=" << hash_rate << hash_rate_str
-                      << ", hash_counter: " << hash_counter
-                      << ", passphrase: " << hash_generator.get_current_permutation()
-                      << ", total passwords discoveries: " << password_discovered << "/"
-                      << total_passwords << "\t\t\t\n";
+            rate += hash_cracker_manager->get_hash_rate();
         }
-        ++hash_counter;
+
+        if (main_thread_hash_cracker_manager.is_task_finished()) {
+            break;
+        }
+
+        if (rate == static_cast<uint64_t>(-1)) {
+            continue;
+        }
+
+        double hash_rate;
+        std::string hash_rate_str;
+        std::tie(hash_rate, hash_rate_str) = UiUtils::build_hash_rate_string(rate);
+
+        std::cout << ""
+                  //<< "\033[0F" // Remove the previous print to prevent screen flooding.
+                  << "HashRate=" << std::setprecision(2) << hash_rate << hash_rate_str
+                  << ", total passwords discoveries: " << discovered_passwords_count << "/"
+                  << hash_list.size()
+                  << "                                                                          \n";
+    }
+
+    for (auto& hash_cracker_manager : hash_cracker_thread_managers) {
+        hash_cracker_manager->get_thread().join_thread();
     }
 }
 
 int main(int argc, char* argv[])
 {
+    for (auto arg_index = 0; arg_index < argc; ++arg_index) {
+        if (std::string_view(argv[arg_index]) == "-s") {
+            std::cout << "single thread mode\n";
+            single_thread = true;
+        }
+    }
+
     try {
         full_flow_demo();
+        std::cout << "Demo finished\n";
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';
         return EXIT_FAILURE;
