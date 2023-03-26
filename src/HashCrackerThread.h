@@ -75,8 +75,13 @@ struct sMSG_HASH_RATE_UPDATE : MsgBase {
 
 class HashCrackerThread {
   public:
-    HashCrackerThread(uint32_t id, HashGenerator &&hash_generator,
-        const std::vector<std::string_view> &encrypted_password_list);
+    /**
+     * @brief Construct a new Hash Cracker Thread object
+     *
+     * @param id Thread ID.
+     * @param hash_generator HashGenerator object.
+     */
+    HashCrackerThread(uint32_t id, HashGenerator &&hash_generator);
 
     /**
      * @brief Initialize the HashCrackerThread instance. Should be called only if the instance is

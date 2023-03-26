@@ -18,6 +18,13 @@
 
 class HashGenerator {
   public:
+    /**
+     * @brief Construct a new Hash Generator object.
+     *
+     * @param salt A string to prepend to each permutation.
+     * @param pepper A string to append to each permutation.
+     * @param valid_characters List of valid characters to permute.
+     */
     HashGenerator(
         std::string_view salt, std::string_view pepper, std::string_view valid_characters);
 
