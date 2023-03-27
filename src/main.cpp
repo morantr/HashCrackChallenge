@@ -151,12 +151,8 @@ void full_flow_demo()
             rate += hash_cracker_manager->get_hash_rate();
         }
 
-        if (main_thread_hash_cracker_manager.is_task_finished()) {
-            break;
-        }
-
         if (rate == static_cast<uint64_t>(-1)) {
-            continue;
+            break;
         }
 
         double hash_rate;

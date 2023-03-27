@@ -73,13 +73,6 @@ class HashCrackerManager {
      */
     inline uint64_t get_hash_rate() const { return m_hash_rate; }
 
-    /**
-     * @brief Checks if the internal HashCrackerThread finished.
-     *
-     * @return true if the internal HashCrackerThread finished, otherwise false.
-     */
-    inline bool is_task_finished() const { return m_finished_task; }
-
   private:
     /**
      * @brief Register message handlers for the internal HashCrackerThread.
@@ -99,6 +92,5 @@ class HashCrackerManager {
     /* Status Variables */
     uint32_t& m_discovered_passwords_count;
     uint64_t m_hash_rate  = -1;
-    bool m_finished_task  = false;
     bool m_is_initialized = false;
 };

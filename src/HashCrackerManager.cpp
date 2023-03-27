@@ -145,8 +145,7 @@ void HashCrackerManager::_register_message_handlers()
             if (m_id > 0) {
                 m_hash_cracker.get_thread().stop_thread();
             }
-
-            m_finished_task = true;
+            m_hash_rate = 0;
         });
 
     // HASH_RATE_UPDATE Handler
