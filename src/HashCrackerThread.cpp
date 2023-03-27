@@ -224,7 +224,7 @@ void HashCrackerThread::_send_finished_task()
 
 void HashCrackerThread::_send_hash_discovery(std::string_view hash, std::string_view permutation)
 {
-    auto msg = std::make_unique<sMSG_HASH_DISCOVERY>(hash, permutation);
+    auto msg = std::make_unique<sMSG_HASH_DISCOVERY>(hash, permutation, m_id);
     _send_message(std::move(msg));
 }
 

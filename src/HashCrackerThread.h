@@ -33,12 +33,13 @@ struct sMSG_SET_TASK : MsgBase {
 };
 
 struct sMSG_HASH_DISCOVERY : MsgBase {
-    sMSG_HASH_DISCOVERY(std::string_view hash_, std::string_view permutation_) :
-        MsgBase(eMessageType::HASH_DISCOVERY), hash(hash_), permutation(permutation_)
+    sMSG_HASH_DISCOVERY(std::string_view hash_, std::string_view permutation_, uint32_t id_) :
+        MsgBase(eMessageType::HASH_DISCOVERY), hash(hash_), permutation(permutation_), id(id_)
     {
     }
     std::string hash;
     std::string permutation;
+    uint32_t id;
 };
 
 struct sMSG_REMOVE_HASH_FROM_LIST : MsgBase {

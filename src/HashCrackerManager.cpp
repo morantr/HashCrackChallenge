@@ -38,7 +38,7 @@ void HashCrackerManager::init(
     // Insert to the list only other HashCrackerManagers that runs their thread
     std::copy_if(other_thread_managers.begin(), other_thread_managers.end(),
         std::back_inserter(m_other_thread_managers),
-        [](const auto& hash_cracker) { return hash_cracker->m_id != 0; });
+        [&](const auto& hash_cracker) { return hash_cracker->m_id != m_id; });
 
     // Initialize the main thread, the other thread will automatically be initialized when
     // the their thread will start.
@@ -113,7 +113,8 @@ void HashCrackerManager::_register_message_handlers()
     m_msg_endpoint.register_message_handler(
         eMessageType::HASH_DISCOVERY, [&](std::unique_ptr<MsgBase>&& message) {
             auto msg = static_cast<sMSG_HASH_DISCOVERY*>(message.get());
-            std::cout << "Cracked hash str: " << std::quoted(msg->permutation)
+            std::cout << "HashCrackerThread " << msg->id
+                      << " cracked hash str: " << std::quoted(msg->permutation)
                       << " hash: " << std::quoted(msg->hash) << "\n\n";
 
             ++m_discovered_passwords_count;
